@@ -13,7 +13,6 @@ main.d main.o: .././main.c \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\version.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\fuse.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\lock.h \
- ../drivers/rc_servo.h ../drivers/display_7seg.h \
  ../VIA_FreeRTOS_AVRMEGA/src/ATMEGA_FreeRTOS.h \
  ../VIA_FreeRTOS_AVRMEGA/src/FreeRTOSConfig.h \
  ../VIA_FreeRTOS_AVRMEGA/src/projdefs.h \
@@ -27,7 +26,8 @@ main.d main.o: .././main.c \
  ../VIA_FreeRTOS_AVRMEGA/src/semphr.h ../VIA_FreeRTOS_AVRMEGA/src/queue.h \
  ../drivers/FreeRTOSTraceDriver.h ../drivers/stdio_driver.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\gcc\avr\5.4.0\include\stdbool.h \
- ../drivers/serial.h ../drivers/Driver_Led.h ../drivers/Driver_Switch.h
+ ../drivers/serial.h ../drivers/Driver_Led.h ../drivers/Driver_Switch.h \
+ ../drivers/rc_servo.h ../drivers/display_7seg.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdio.h:
 
@@ -56,10 +56,6 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\fuse.h:
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\lock.h:
-
-../drivers/rc_servo.h:
-
-../drivers/display_7seg.h:
 
 ../VIA_FreeRTOS_AVRMEGA/src/ATMEGA_FreeRTOS.h:
 
@@ -98,3 +94,7 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 ../drivers/Driver_Led.h:
 
 ../drivers/Driver_Switch.h:
+
+../drivers/rc_servo.h:
+
+../drivers/display_7seg.h:

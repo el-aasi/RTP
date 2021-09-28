@@ -1,148 +1,113 @@
-/*
- * main.c
- *
- * Created: 29/08/2021 21:44:06
- * Author: LBS
- 
- * System tick = 58 ticks pr. second
- */
+#include <stdio.h>
+#include <avr/io.h>
+#include <avr/sfr_defs.h>
+#include <stdint.h>
 
- #include <stdio.h>
- #include <avr/io.h>
- #include <avr/sfr_defs.h>
- #include <stdint.h>
+#include <ATMEGA_FreeRTOS.h>
+#include <semphr.h>
 
- // Drivers
- #include <rc_servo.h>
- #include <display_7seg.h>
+#include <FreeRTOSTraceDriver.h>
+#include <stdio_driver.h>
+#include <serial.h>
 
- #include <ATMEGA_FreeRTOS.h>
- #include <semphr.h>
+#include <Driver_Led.h>
+#include <Driver_Switch.h>
+#include <rc_servo.h>
+#include <display_7seg.h>
 
- #include <FreeRTOSTraceDriver.h>
- #include <stdio_driver.h>
- #include <serial.h>
- #include <Driver_Led.h>
- #include <Driver_Switch.h>
+SemaphoreHandle_t xSemaphore; 
+void sampleTask(void *pvParameters);
+void readTask(void *pvParameters);
+int arr[100];
 
- // define two Tasks
- void task1( void *pvParameters );
+void create_tasks_and_semaphores(void)
+{
+	xSemaphore = xSemaphoreCreateCounting(1, 1);
+	
+	xTaskCreate(sampleTask, "Sample Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(readTask, "Read Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+}
 
- // define semaphore handle
- SemaphoreHandle_t xTestSemaphore;
-
-
- /*-----------------------------------------------------------*/
- void create_tasks_and_semaphores(void)
- {
-	 // Semaphores are useful to stop a Task proceeding, where it should be paused to wait,
-	 // because it is sharing a resource, such as the Serial port.
-	 // Semaphores should only be used whilst the scheduler is running, but we can set it up here.
-	 if ( xTestSemaphore == NULL )  // Check to confirm that the Semaphore has not already been created.
-	 {
-		 xTestSemaphore = xSemaphoreCreateMutex();  // Create a mutex semaphore.
-		 if ( ( xTestSemaphore ) != NULL )
-		 {
-			 xSemaphoreGive( ( xTestSemaphore ) );  // Make the mutex available for use, by initially "Giving" the Semaphore.
-		 }
-	 }
-
-	 xTaskCreate(
-	 task1
-	 ,  "Task1"  // A name just for humans
-	 ,  configMINIMAL_STACK_SIZE  // This stack size can be checked & adjusted by reading the Stack Highwater
-	 ,  NULL
-	 ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-	 ,  NULL );
- }
-
- /*-----------------------------------------------------------*/
- void task1( void *pvParameters )
- {
-	 #if (configUSE_APPLICATION_TASK_TAG == 1)
-	 // Set task no to be used for tracing with R2R-Network
-	 vTaskSetApplicationTaskTag( NULL, ( void * ) 2 );
-	 #endif
-
-	 TickType_t xLastWakeTime;
-	 const TickType_t xFrequency = 29; // 100 ms
-
-	 // Initialize the xLastWakeTime variable with the current time.
-	 xLastWakeTime = xTaskGetTickCount();
-	 
+void sampleTask(void *pvParameters)
+{
 	for(;;)
 	{
-		xTaskDelayUntil( &xLastWakeTime, xFrequency );
-		
-		uint8_t buttonStates[8];
-		uint8_t output = 0;
-		uint8_t power = 1;
-		uint8_t number_of_leds = 7;
-		
-		for(int8_t i = 0; i <= number_of_leds; i++)
-		{
-			uint8_t temp = get_buttonState(i);
-			buttonStates[i] = temp;
-			set_led(i, temp);
-		}
-		
-		for (int8_t i = number_of_leds; i>=0; i--)
-		{
-			uint8_t buttonValue = 1 - buttonStates[number_of_leds - i];
-			output +=  buttonValue * power;
-			power *= 2;
-		}
-		
-		display_7seg_display(output,0);
-		
-		if(output == 128)
-		{
-			rc_servo_setPosition(0, 100);
-		}
-		else if(output == 1)
-		{
-			rc_servo_setPosition(0, -100);
-		}
-		else
-		{
-			rc_servo_setPosition(0, 0);
-		}
+		printf("Sample task attempting to take the semaphore\r\n");
 
+		xSemaphoreTake(xSemaphore, portMAX_DELAY);
+		display_7seg_display(0,0);
+		printf("Sample task started\r\n");
+		
+		for(int c = 0; c < 100; c++)
+		{
+			for(int i = 0; i < 1000; i++)
+			{
+				for(int i = 0; i < 100; i++)
+				{
+					;
+				}
+			}
+			arr[c] = c;
+		}
+		
+		xSemaphoreGive(xSemaphore);
+		
+		vTaskDelay(29);
 	}
- }
+}
 
- /*-----------------------------------------------------------*/
- void initialiseSystem()
- {
-	 init_led();
-	 init_button();
-	 
-	DDRD = 0x00;
-	PORTD = 0x0C;
-	 
-	// Make it possible to use stdio on COM port 0 (USB) on Arduino board - Setting 57600,8,N,1
+void readTask(void *pvParameters)
+{
+	for(;;)
+	{
+		printf("Read attempting to take the semaphore\r\n");
+		
+		xSemaphoreTake(xSemaphore, portMAX_DELAY);
+		
+		display_7seg_display(1,0);
+		printf("Read task started\r\n");
+
+		int sumHolder = 0;
+		
+		for(int c = 0; c < 100; c++)
+		{
+			sumHolder += arr[c];
+			arr[c] = 0;
+			
+			for(int i = 0; i < 1000; i++)
+			{
+				for(int j = 0; j < 100; j++)
+				{
+					;
+				}
+			}
+		}
+	
+		printf("%d\r\n", sumHolder/100);
+		xSemaphoreGive(xSemaphore);	
+		
+		vTaskDelay(29);
+	}
+}
+
+void initialiseSystem()
+{
 	stdio_initialise(ser_USART0);
-	 
-	// Create some tasks
 	create_tasks_and_semaphores();
-	 
-	// Initialize drivers
+	
 	display_7seg_initialise(NULL);
 	display_7seg_powerUp();
-	 
-	rc_servo_initialise ();
- }
+}
 
- /*-----------------------------------------------------------*/
  int main(void)
- {	
-	 initialiseSystem(); // Must be done as the very first thing!!
-	 printf("Program Started.\r\n");
-	 vTaskStartScheduler(); // Initialise and run the freeRTOS scheduler. Execution should never return from here.
-
-	 /* Replace with your application code */
-	 while (1)
-	 {
-	 }
- }
+{	
+	initialiseSystem();
+	printf("Program Started.\r\n");
+	vTaskStartScheduler();
+	
+	while (1)
+	{
+		
+	}
+}
  
