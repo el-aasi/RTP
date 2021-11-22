@@ -24,27 +24,29 @@ void create_tasks_and_semaphores(void)
 
 void messenger(void *pvParameters)
 {		
-	PORTA = PORTA & 0b11111010;
-	vTaskDelay(14);
-	PORTA = PORTA & 0b00000101;
+	PORTA = PORTA & 0b00001111;
+	int counter = 0;
 	
 	for(;;)
 	{
-		vTaskDelay(14);
+		printf("Not sending\r\n");
+		PORTA = PORTA | 0b00001111;
 		
-		printf("Sending\n\r");
+		vTaskDelay(50);
 		
-			PORTA = PORTA & 0b11111010;
-			vTaskDelay(14);
-			PORTA = PORTA & 0b00000101;
+		printf("Sending\r\n");
+		PORTA = PORTA & 0b11110000;
 		
+		vTaskDelay(50);
+			
+			counter++; 
 	}
 }
 
 void initialiseSystem()
 {
-	DDRA = 0b00000101;
-	PORTA = 0b00001010;
+	DDRA =  0b00001111;
+	PORTA = 0b11110000;
 	stdio_initialise(ser_USART0);
 	create_tasks_and_semaphores();
 }
