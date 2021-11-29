@@ -15,31 +15,89 @@
 #include <rc_servo.h>
 #include <display_7seg.h>
 
-void messenger(void *pvParameters);
+SemaphoreHandle_t xInterruptSemaphore; 
+int currentState = 0;
+int buffer[100];
+int index = 0; 
+
+void fakeInterruptFunction(void *pvParameters);
+void receiveMessage(void *pvParameters);
 
 void create_tasks_and_semaphores(void)
 {
-	xTaskCreate(messenger, "Sample Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xInterruptSemaphore = xSemaphoreCreateCounting(1, 0);
+	xTaskCreate(fakeInterruptFunction, "Fake Interrupt", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 99, NULL);
+	xTaskCreate(receiveMessage, "Sample Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 }
 
-void messenger(void *pvParameters)
-{		
-	PORTA = PORTA & 0b00001111;
-	int counter = 0;
-	
+void fakeInterruptFunction(void *pvParameters)
+{	
 	for(;;)
 	{
-		printf("Not sending\r\n");
-		PORTA = PORTA | 0b00001111;
+		if(currentState == 0)
+		{
+			int interruptPin = 0;
+			interruptPin = PINA & 0b00010000;
+					
+			if(interruptPin == 0)
+			{
+				currentState = 1;
+				printf("Starting communication\n");
+				xSemaphoreGive(xInterruptSemaphore);
+			}
+		}
 		
-		vTaskDelay(50);
+		vTaskDelay(1);
+	}
+}
+
+void receiveMessage(void *pvParameters)
+{
+	for(;;)
+	{	
+		if(currentState == 0)
+		{
+			xSemaphoreTake(xInterruptSemaphore, portMAX_DELAY);
+			vTaskDelay(6);
+		}
 		
-		printf("Sending\r\n");
-		PORTA = PORTA & 0b11110000;
+		int stopPin, dataPin = 0;
+		stopPin = PINA & 0b10000000;
+		dataPin = PINA & 0b01000000;
 		
-		vTaskDelay(50);
+		if(stopPin == 0)
+		{
+			currentState = 0;
 			
-			counter++; 
+			printf("Message: ");
+			for(int i = 0; i <= index - 2; i++)
+			{
+				printf("%d", buffer[i]);
+			}
+			printf("\n");
+			
+			for(int i = 0; i <= index; i++)
+			{
+				buffer[i] = -1;
+			}
+			
+			
+			index = 0;
+			continue;
+		}
+		
+		if(dataPin == 0)
+		{
+			buffer[index] = 1;
+		}
+		else
+		{
+			buffer[index] = 0;
+		}
+		
+		index++;
+		
+		vTaskDelay(6);
 	}
 }
 
@@ -54,7 +112,7 @@ void initialiseSystem()
  int main(void)
 {	
 	initialiseSystem();
-	printf("Program Started.\r\n");
+	printf("Program Started.\n");
 	vTaskStartScheduler();
 	
 	while (1)
